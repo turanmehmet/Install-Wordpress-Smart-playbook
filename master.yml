@@ -1,0 +1,80 @@
+- hosts: all
+  become: true
+  become_method: sudo
+  vars:
+    mysql_db: "wordpress"
+    mysql_user: "wpuser"
+    mysql_password: "password"
+  tasks:
+  # --------------DEBIAN------------------
+  - name: Update packages * for DEBIAN Machines
+    apt: name=* state=present
+    when: ansible_facts['os_family'] == 'Debian'
+
+  - name: Install apache2 for DEBIAN Web Machines
+    include_tasks: debian/install_apache.yml
+    when: inventory_hostname in groups['web'] and ansible_facts['os_family'] == 'Debian'
+
+  - name: Install mysql for DEBIAN Db Machines
+    include_tasks: debian/install_mysql.yml
+    when: inventory_hostname in groups['db'] and ansible_facts['os_family'] == 'Debian'
+
+  - name: Install php for DEBIAN Web Machines
+    include_tasks: debian/install_php.yml
+    when: inventory_hostname in groups['web'] and ansible_facts['os_family'] == 'Debian'
+
+  - name: Install WordPress for Web DEBIAN Machines
+    include_tasks: debian/install_wordpress.yml
+    when: inventory_hostname in groups['web'] and ansible_facts['os_family'] == 'Debian'
+
+  
+    #---------- REDHAT --------------
+  - name: Install Prerequisites for REDHAT machines
+    package:
+      name:
+      - libselinux-python
+      - epel-release
+      state: present
+    when: ansible_facts['os_family'] == 'RedHat'
+
+  - name: Disable Selinux  for REDHAT machines
+    selinux:
+      state: disabled
+    when: ansible_facts['os_family'] == 'RedHat'
+    register: selinux_status
+
+  - name: Reboot for REDHAT machines
+    reboot:
+      reboot_timeout: 3600
+    when: selinux_status.changed
+
+  - name: Install php for REDHAT Web machines
+    include_tasks: centos/install_php.yml
+    when: inventory_hostname in groups['web'] and ansible_facts['os_family'] == 'RedHat'
+
+  - name: Install apache for REDHAT Web machines
+    include_tasks: centos/install_apache.yml
+    when: inventory_hostname in groups['web'] and ansible_facts['os_family'] == 'RedHat'
+
+  - name: Install mysql for REDHAT Db machines
+    include_tasks: centos/install_mysql.yml
+    when: inventory_hostname in groups['db'] and ansible_facts['os_family'] == 'RedHat'
+
+  - name: Install WordPress for REDHAT Web machines
+    include_tasks: centos/install_wordpress.yml
+    when: inventory_hostname in groups['web'] and ansible_facts['os_family'] == 'RedHat'
+
+
+  #handlers
+  handlers:
+  - name: Reload Apache
+    service:
+      name: apache2
+      state: reloaded
+
+  - name: restart apache2
+    service: name=apache2 state=restarted
+    
+  - name: reboot
+    reboot:
+      reboot_timeout: 3600

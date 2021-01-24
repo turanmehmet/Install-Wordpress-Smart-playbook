@@ -1,0 +1,52 @@
+- name: Donwload Wordpress
+  unarchive:
+    src: "https://wordpress.org/latest.tar.gz"
+    dest: /tmp
+    remote_src: yes
+- name: Move files to /var/www/html
+  command: cp -rf . "/var/www/html"
+  args:
+    chdir: "/tmp/wordpress/"
+- name: Remove temporary dir
+  file:
+    path: "/tmp/wordpress/"
+    state: absent
+- name: Remove index.html file
+  file:
+    path: "/var/www/html/index.html"
+    state: absent
+
+
+- name: "UFW - Allow HTTP on port {{ http_port }}"
+  ufw:
+    rule: allow
+    port: "80"
+    proto: tcp
+
+- name: Set ownership
+  file:
+    path: "/var/www/"
+    state: directory
+    recurse: yes
+    owner: www-data
+    group: www-data
+
+- name: Set permissions for directories
+  command: "/usr/bin/find /var/www/html/ -type d -exec chmod 750 {} \\;"
+
+- name: Set permissions for files
+  command: "/usr/bin/find /var/www/html/ -type f -exec chmod 640 {} \\;"
+
+# - name: Copy sample config file
+#   command: mv /var/www/html/wp-config-sample.php /var/www/html/wp-config.php
+
+# - name: Update Wordpress config file
+#   lineinfile:
+#     path: /var/www/html/wp-config.php
+#     regexp: "{{item.regexp}}"
+#     line: "{{item.line}}"
+#   with_items:
+#     - {'regexp': "define\\( 'DB_NAME', '(.)+' \\);", 'line': "define( 'DB_NAME', '{{ mysql_db }}' );"}
+#     - {'regexp': "define\\( 'DB_USER', '(.)+' \\);", 'line': "define( 'DB_USER', '{{ mysql_user }}' );"}
+#     - {'regexp': "define\\( 'DB_PASSWORD', '(.)+' \\);", 'line': "define( 'DB_PASSWORD', '{{ mysql_password }}' );"}
+#     - {'regexp': "define\\( 'DB_HOST', '(.)+' \\);", 'line': "define( 'DB_HOST', '{{ db_hostname }}' );"}

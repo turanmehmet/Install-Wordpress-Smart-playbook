@@ -1,0 +1,16 @@
+- name: install apache2
+  apt: name=apache2 update_cache=yes state=latest
+
+- name: enabled mod_rewrite
+  apache2_module: name=rewrite state=present
+  notify:
+    - restart apache2
+    - Reload Apache
+
+# - name: Disable default apache2 website
+#   file:
+#     path: /etc/apache2/sites-available/000-default.conf
+#     state: absent
+#   notify:
+#     - restart apache2
+#     - Reload Apache
